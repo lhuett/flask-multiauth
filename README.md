@@ -1,6 +1,9 @@
 # Flask-MultiAuth
-Flask-MultiAuth allows the developer to simply decorate a flask view, that is in need of authentication, to get both
-Kerberos or LDAP authentication.
+Flask-MultiAuth allows the developer to simply decorate a flask view that is in need of authentication, to get both
+Kerberos and LDAP authentication.
+Kerberos authentication will be attempted first, if unsuccessful it will check for the presence 
+of a Basic Aauth header in the request and if present it will then proceed to try to authenticate
+using ldap 
 
 ## How To Install
 
