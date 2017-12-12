@@ -2,17 +2,15 @@ import logging
 
 from flask import Response
 from flask import jsonify, Flask
-
-import config as cfg
+from os import environ
 from flask_multiauth import authenticate, init_multiauth
 
-testauth = Flask(__name__)
-testauth.config.from_object(cfg)
+authex = Flask(__name__)
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s %(levelname)s %(message)s')
 logger = logging.getLogger("TEST")
 
-init_multiauth(testauth, "HTTP", "ceehadoop1.gsslab.rdu2.redhat.com")
+init_multiauth(authex, "HTTP", "ceehadoop1.gsslab.rdu2.redhat.com")
 
 
 def _unauthorized():
@@ -27,7 +25,7 @@ def _forbidden():
     return Response(error, 403)
 
 
-@testauth.route('/example/auth/', methods=['GET'])
+@authex.route('/example/auth/', methods=['GET'])
 @authenticate(unauthorized=_unauthorized, forbidden=_forbidden)
 def example(user):
 
@@ -37,4 +35,12 @@ def example(user):
 # Main
 if __name__ == "__main__":
 
-    testauth.run(host='0.0.0.0', port=5006, debug=True)
+    if "LDAP_CONFIG" not in environ:
+        logger.warn("Please set LDAP_CONFIG to your fully quailified ldap configuration file name")
+    else:
+        try:
+            authex.config.from_envvar("LDAP_CONFIG")
+        except Exception as ex:
+            logger.error("Could not load LDAP config from file - {0}".format(environ.get("LDAP_CONFIG")))
+        else:
+            authex.run(host='0.0.0.0', port=5006, debug=True)

@@ -31,7 +31,7 @@ develop = {
 
 if __name__ == "__main__":
     # allows for runtime modification of rpm name
-    name = "test"
+    name = "flask-multiauth"
 
     try:
         setup(
@@ -40,6 +40,7 @@ if __name__ == "__main__":
             description="Insights RuleAnalysis Services",
             packages=find_packages(),
             include_package_data=True,
+            py_modules=['flask_multiauth'],
             install_requires=list(runtime),
             extras_require={
                 'develop': list(runtime | develop),

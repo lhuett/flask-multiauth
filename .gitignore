@@ -6,6 +6,7 @@ __pycache__/
 # flask-multiauth
 pip-selfcheck.json
 example/config.py
+config.py
 
 # IntelliJ
 .idea/

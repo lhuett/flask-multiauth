@@ -143,6 +143,7 @@ def _ldap_auth(kerb_user=None):
             ldap_connection.start_tls_s()
             if not ldap_connection.simple_bind_s(user, password):
                 return None
+            authorized_user = username
 
         if _cfg['VALID_LDAP_GROUPS'] != "()":
             # Search ldap to verify that user is in one of the defined valid groups
@@ -150,12 +151,6 @@ def _ldap_auth(kerb_user=None):
             rtype, rdata = ldap_connection.result(ldap_result_id, 1)
             if rdata:
                 authorized_user = username
-                # if not kerb_user:
-                #     _logger.warn(": Could not authorize using kerberos, trying ldap")
-                #     user = "uid=" + username + "," + _cfg['LDAP_BIND_BASE']
-                #     ldap_connection.start_tls_s()
-                #     if not ldap_connection.simple_bind_s(user, password):
-                #         authorized_user = None
             else:
                 func = inspect.stack()[0][3]
                 _logger.warn("{0} - Bad Request, could not verify users credentials - user not in group ".format(func))
