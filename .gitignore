@@ -3,18 +3,27 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# flask-multiauth
+pip-selfcheck.json
+
+# IntelliJ
+.idea/
+flask-multiauth.iml
+
 # C extensions
 *.so
 
 # Distribution / packaging
 .Python
 env/
+bin/
 build/
 develop-eggs/
 dist/
 downloads/
 eggs/
 .eggs/
+include/
 lib/
 lib64/
 parts/
