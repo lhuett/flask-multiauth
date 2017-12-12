@@ -4,7 +4,7 @@ Kerberos or LDAP authentication.
 
 ## How To Install
 
-$ 
+$ pip install --upgrade git+git://github.com/lhuett/flask-multiauth.git
 
 ## Configuration:
 You will need to configure you flask app with the following parameters for ldap Support
