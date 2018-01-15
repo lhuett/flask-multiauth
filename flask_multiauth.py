@@ -204,7 +204,7 @@ def authenticate(unauthorized=_unauthorized, forbidden=_forbidden):
                     if not usr:
                         return unauthorized()
                     return func(usr)
-                else:
+                elif rc != kerberos.AUTH_GSS_CONTINUE:
                     return forbidden()
             else:
                 return unauthorized()

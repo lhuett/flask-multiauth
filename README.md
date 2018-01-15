@@ -10,7 +10,7 @@ using ldap
 $ pip install --upgrade git+git://github.com/lhuett/flask-multiauth.git
 
 ## Configuration:
-You will need to configure you flask app with the following parameters for ldap Support
+You will need to configure you flask app (app.config) with the following parameters for ldap Support.
 
 - VALID_LDAP_GROUPS = '(cn=common_name_for_group)'     (Set to () if no group checking to be done)
     - Example: VALID_LDAP_GROUPS = '(cn=my_ldap_group)'
@@ -38,6 +38,38 @@ configuration previously explained in this document.
 #### Simple Example
 A very simple example is available in this [github project's](https://github.com/lhuett/flask-multiauth)
 example directory 
+
+#### Initialization
+
+Example:
+
+   import socket 
+   
+   init_multiauth(<flask app name>)
+
+
+####Usage
+
+def _unauthorized():
+
+        error = "Unauthorized - Please make sure to run the 'kinit' command or enter user id and password and that you are in " \
+                "the proper ldap group"
+        return Response("User not Authorized", 401, {'WWW-Authenticate': 'Negotiate'})
+
+
+def _forbidden():
+
+        error = "Forbidden - Invalid Kerberos credentials."
+        return Response(error, 403)
+
+
+@authenticate(unauthorized=_unauthorized, forbidden=_forbidden)
+def somefunc(user)
+    
+    if user:
+        do something
+    else:
+        print('User not authenticated')
 
 
 

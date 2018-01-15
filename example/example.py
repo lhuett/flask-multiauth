@@ -6,6 +6,7 @@ from flask import jsonify, Flask, render_template, request, redirect, url_for
 from os import environ
 from flask_multiauth import authenticate, init_multiauth
 import config_example as cfg
+import socket
 
 
 authex = Flask(__name__)
@@ -13,7 +14,7 @@ authex = Flask(__name__)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s %(levelname)s %(message)s')
 logger = logging.getLogger("TEST")
 
-init_multiauth(authex, "HTTP", "ceehadoop1.gsslab.rdu2.redhat.com")
+init_multiauth(authex)
 
 def _unauthorized():
 
@@ -21,7 +22,7 @@ def _unauthorized():
     error = "Please make sure to run the 'kinit' command or enter user id and password and that you are in " \
             "the proper ldap group"
 
-    return render_template('login.html', error=error)
+    return Response("User not Authorized", 401, {'WWW-Authenticate': 'Negotiate'})
 
 
 def _forbidden():
