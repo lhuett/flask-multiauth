@@ -1,0 +1,22 @@
+<!doctype html>
+<title>Rule Analysis</title>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+
+<link rel=stylesheet type=text/css href="{{ url_for('static', filename='style.css') }}">
+<div class=page>
+  <img align="right" src="../../static/Logo_RH_RGB_Default.png" alt="HTML5 Icon" style="width:240px;height:84px">
+  <br><br><br><br><br><br><br>
+   <h1>Rule Analysis</h1>
+    <br>
+  <div class=metanav>
+<!--  {% if session.logged_in %}
+    <a href="{{ url_for('logout') }}">log out</a>
+  {% endif %} -->
+  </div>
+  {% for message in get_flashed_messages() %}
+    <div class=flash>{{ message }}</div>
+  {% endfor %}
+  {% block body %}{% endblock %}
+</div>

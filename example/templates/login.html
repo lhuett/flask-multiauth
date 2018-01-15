@@ -1,0 +1,17 @@
+{% extends "layout.html" %}
+{% block body %}
+    <br><br>
+{#  <h1 class="border">Login</h1>#}
+  {% if error %}<p class=error><strong>Error:</strong> {{ error }}{% endif %}
+  <form action="{{ url_for('ldap_login') }}" method=post>
+    <dl>
+      <dt>Username:
+      <dd><input type=text name=username>
+      <dt>Password:
+      <dd><input type=password name=password>
+      <dd><input type=submit value=Login>
+      <dd><input type="hidden" name=next value="{{ request.args.get('next', '') }}"/>
+      <dd><input type="hidden" name=path value="{{ request.args.get('path', '') }}"/>
+    </dl>
+  </form>
+{% endblock %}

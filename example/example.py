@@ -1,9 +1,12 @@
 import logging
 
 from flask import Response
-from flask import jsonify, Flask
+from base64 import b64encode
+from flask import jsonify, Flask, render_template, request, redirect, url_for
 from os import environ
-from flask_multiauth import authenticate, init_multiauth
+from flask_multiauth import authenticate, init_multiauth, ldap_auth
+import config_example as cfg
+
 
 authex = Flask(__name__)
 
@@ -12,12 +15,13 @@ logger = logging.getLogger("TEST")
 
 init_multiauth(authex, "HTTP", "ceehadoop1.gsslab.rdu2.redhat.com")
 
-
 def _unauthorized():
 
-    error = "Unauthorized  - Could not authorize via Kerberos, please run the 'kinit' from the command line " \
-            "and retry, or supply user credentials in the Basic Auth header.\n"
-    return Response(error, 401, {'WWW-Authenticate': 'Negotiate'})
+
+    error = "Please make sure to run the 'kinit' command or enter user id and password and that you are in " \
+            "the proper ldap group"
+
+    return render_template('login.html', error=error)
 
 
 def _forbidden():
@@ -25,11 +29,24 @@ def _forbidden():
     return Response(error, 403)
 
 
+@authex.route('/example/ldap_login/', methods=['GET', 'POST'])
+def ldap_login():
+
+
+    basic_auth = b64encode("{0}:{1}".format(request.form["username"],request.form["password"]))
+
+    request.environ.update({"HTTP_AUTHORIZATION": "Basic {0}".format(basic_auth)})
+
+    return example()
+
+
 @authex.route('/example/auth/', methods=['GET'])
 @authenticate(unauthorized=_unauthorized, forbidden=_forbidden)
 def example(user):
 
-    return jsonify({"status": "Success"}, {"user": user})
+    if user:
+        return jsonify({"status": "Success"}, {"user": user})
+    print "hmmm"
 
 
 # Main
