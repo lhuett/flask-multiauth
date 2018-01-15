@@ -4,7 +4,7 @@ from flask import Response
 from base64 import b64encode
 from flask import jsonify, Flask, render_template, request, redirect, url_for
 from os import environ
-from flask_multiauth import authenticate, init_multiauth, ldap_auth
+from flask_multiauth import authenticate, init_multiauth
 import config_example as cfg
 
 
