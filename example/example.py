@@ -22,7 +22,7 @@ def _unauthorized():
     error = "Please make sure to run the 'kinit' command or enter user id and password and that you are in " \
             "the proper ldap group"
 
-    return Response("User not Authorized", 401, {'WWW-Authenticate': 'Negotiate'})
+    return Response(render_template('login.html', error=error), 401, {'WWW-Authenticate': 'Negotiate'})
 
 
 def _forbidden():
