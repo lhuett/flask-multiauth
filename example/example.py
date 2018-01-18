@@ -5,7 +5,7 @@ from base64 import b64encode
 from flask import jsonify, Flask, render_template, request, redirect, url_for
 from os import environ
 from flask_multiauth import authenticate, init_multiauth
-import config_example as cfg
+import config_example
 import socket
 
 
@@ -13,6 +13,7 @@ authex = Flask(__name__)
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s %(levelname)s %(message)s')
 logger = logging.getLogger("TEST")
+
 
 init_multiauth(authex)
 
@@ -55,10 +56,13 @@ if __name__ == "__main__":
 
     if "LDAP_CONFIG" not in environ:
         logger.warn("Please set LDAP_CONFIG to your fully quailified ldap configuration file name")
-    else:
-        try:
-            authex.config.from_envvar("LDAP_CONFIG")
-        except Exception as ex:
-            logger.error("Could not load LDAP config from file - {0}".format(environ.get("LDAP_CONFIG")))
-        else:
-            authex.run(host='0.0.0.0', port=5006, debug=True)
+        exit(1)
+    try:
+        authex.config.from_envvar("LDAP_CONFIG")
+    except Exception as ex:
+        logger.error("Could not load LDAP config from file - {0}".format(environ.get("LDAP_CONFIG")))
+        exit(1)
+
+    authex.run(host='0.0.0.0', port=5006, debug=True)
+    environ["KRB5_KTNAME"] = authex.config.KRB5_KTNAME
+
