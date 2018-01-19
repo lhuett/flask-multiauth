@@ -4,11 +4,14 @@ from socket import gethostname
 from flask import Response
 from flask import make_response
 from flask import request
+from flask import session
 from os import environ
 from base64 import b64decode
 import inspect
 import ldap
 import ldap.sasl
+from Crypto.Cipher import AES
+from base64 import b64decode, b64encode
 
 _SERVICE_NAME = None
 _logger = None
@@ -110,8 +113,12 @@ def _ldap_auth(kerb_user=None):
     username = None
     if kerb_user:
         username = kerb_user.split('@', 1)[0]
-    elif "HTTP_AUTHORIZATION" in request.headers.environ and "Basic" in request.environ["HTTP_AUTHORIZATION"]:
-        auth = request.headers.environ["HTTP_AUTHORIZATION"].split(' ', 1)
+    elif ("HTTP_AUTHORIZATION" in request.headers.environ and "Basic" in request.environ["HTTP_AUTHORIZATION"]) or \
+            "BASIC_AUTH" in session:
+        if "BASIC_AUTH" in session:
+            auth = session["BASIC_AUTH"].split(' ', 1)
+        else:
+            auth = request.headers.environ["HTTP_AUTHORIZATION"].split(' ', 1)
         try:
             username, password = b64decode((auth[1])).split(":")
         except Exception as ex:
@@ -184,9 +191,15 @@ def authenticate(unauthorized=_unauthorized, forbidden=_forbidden):
         @wraps(func)
         def inner(*args, **kwargs):
 
+            if "LOGGED_IN_USER" in session:
+                cipher = AES.new(_cfg["K"])
+                user = cipher.decrypt(b64decode(session["LOGGED_IN_USER"]))
+                user = user.rstrip()
+                return func(user, *args, **kwargs)
+
             authorized_user = None
             header = request.headers.get("Authorization")
-            if header:
+            if header and ("Negotiate" in header):
                 token = ''.join(header.split()[1:])
                 rc, state = _kerberos_auth(token)
                 if rc == kerberos.AUTH_GSS_COMPLETE:
@@ -194,19 +207,46 @@ def authenticate(unauthorized=_unauthorized, forbidden=_forbidden):
                     authorized_user = _ldap_auth(kerberos.authGSSServerUserName(state))
                     if not authorized_user:
                         return unauthorized()
+                    enc_user = "{:<16}".format(authorized_user)
+                    cipher = AES.new(_cfg["K"])
+                    crypt_user = b64encode(cipher.encrypt(enc_user))
                     response = func(authorized_user, *args, **kwargs)
                     response = make_response(response)
+                    session["LOGGED_IN_USER"] = crypt_user
                     if kerberos_token is not None:
                         response.headers['WWW-Authenticate'] = ' '.join(['negotiate', kerberos_token])
                     return response
-                elif rc != kerberos.AUTH_GSS_CONTINUE and "Basic" in header:
-                    usr = _ldap_auth(None)
-                    if not usr:
-                        return unauthorized()
-                    return func(usr)
                 elif rc != kerberos.AUTH_GSS_CONTINUE:
                     return forbidden()
+            elif (header and "Basic" in header) or ("BASIC_AUTH" in session and "Basic" in session["BASIC_AUTH"]):
+                usr = _ldap_auth(None)
+                if not usr:
+                    return unauthorized()
+                enc_user = "{:<16}".format(usr)
+                cipher = AES.new(_cfg["K"])
+                crypt_user = b64encode(cipher.encrypt(enc_user))
+                session["LOGGED_IN_USER"] = crypt_user
+                return func(usr, *args, **kwargs)
             else:
                 return unauthorized()
         return inner
     return decorator
+
+
+def logout(function):
+    '''
+    Sets state to logged out by removing variables indicating a logged in state
+    :param function: flask view function
+    :type function: function
+    :returns: decorated function
+    :rtype: function
+    '''
+    @wraps(function)
+    def logout_func(*args, **kwargs):
+
+        if "LOGGED_IN_USER" in session:
+            session.pop("LOGGED_IN_USER", None)
+        if "BASIC_AUTH" in session:
+            session.pop("BASIC_AUTH")
+        return function()
+    return logout_func
