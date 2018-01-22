@@ -1,7 +1,6 @@
 import logging
 
 from flask import Response, session
-from flask_session import Session
 from base64 import b64encode
 from flask import jsonify, Flask, render_template, request, redirect, url_for
 from os import environ

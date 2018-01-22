@@ -12,6 +12,7 @@ import ldap
 import ldap.sasl
 from Crypto.Cipher import AES
 from base64 import b64decode, b64encode
+from flask import _request_ctx_stack as stack
 
 _SERVICE_NAME = None
 _logger = None
@@ -75,19 +76,22 @@ def _kerberos_auth(token):
 
     state = None
     rc = None
+    context = stack.top
     try:
         rc, state = kerberos.authGSSServerInit(_SERVICE_NAME)
         if rc != kerberos.AUTH_GSS_COMPLETE:
-            return None, state
+            return None
         rc = kerberos.authGSSServerStep(state, token)
         if rc == kerberos.AUTH_GSS_COMPLETE:
-            return rc, state
+            context.kerberos_token = kerberos.authGSSServerResponse(state)
+            context.kerberos_user = kerberos.authGSSServerUserName(state)
+            return rc
         elif rc == kerberos.AUTH_GSS_CONTINUE:
-            return kerberos.AUTH_GSS_CONTINUE, state
+            return kerberos.AUTH_GSS_CONTINUE
         else:
-            return None, state
+            return None
     except kerberos.GSSError:
-        return None, state
+        return None
     finally:
         if state:
             kerberos.authGSSServerClean(state)
@@ -200,11 +204,11 @@ def authenticate(unauthorized=_unauthorized, forbidden=_forbidden):
             authorized_user = None
             header = request.headers.get("Authorization")
             if header and ("Negotiate" in header):
+                context = stack.top
                 token = ''.join(header.split()[1:])
-                rc, state = _kerberos_auth(token)
+                rc = _kerberos_auth(token)
                 if rc == kerberos.AUTH_GSS_COMPLETE:
-                    kerberos_token = kerberos.authGSSServerResponse(state)
-                    authorized_user = _ldap_auth(kerberos.authGSSServerUserName(state))
+                    authorized_user = _ldap_auth(context.kerberos_user)
                     if not authorized_user:
                         return unauthorized()
                     enc_user = "{:<16}".format(authorized_user)
@@ -213,8 +217,8 @@ def authenticate(unauthorized=_unauthorized, forbidden=_forbidden):
                     response = func(authorized_user, *args, **kwargs)
                     response = make_response(response)
                     session["LOGGED_IN_USER"] = crypt_user
-                    if kerberos_token is not None:
-                        response.headers['WWW-Authenticate'] = ' '.join(['negotiate', kerberos_token])
+                    if context.kerberos_token is not None:
+                        response.headers['WWW-Authenticate'] = ' '.join(['negotiate', context.kerberos_token])
                     return response
                 elif rc != kerberos.AUTH_GSS_CONTINUE:
                     return forbidden()

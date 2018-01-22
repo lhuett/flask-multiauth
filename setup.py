@@ -4,18 +4,10 @@ from setuptools import setup, find_packages
 __here__ = os.path.dirname(os.path.abspath(__file__))
 
 runtime = {
-    'pyyaml',
     'requests',
-    'requests_kerberos',
     'flask',
     'Jinja2',
-    'Flask-RESTful',
-    'Flask-SQLAlchemy',
-    'MySQL-python',
-    'SQLAlchemy',
-    'gunicorn',
     'flask-ldap',
-    'flask-session',
     'kerberos',
     'pycrypto',
 }
