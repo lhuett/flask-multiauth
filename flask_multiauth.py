@@ -116,7 +116,10 @@ def _ldap_auth(kerb_user=None):
     password = None
     username = None
     if kerb_user:
-        username = kerb_user.split('@', 1)[0]
+        if _cfg["GROUP_AUTH"]:
+            username = kerb_user.split('@', 1)[0]
+        else:
+            return kerb_user.split('@', 1)[0]
     elif ("HTTP_AUTHORIZATION" in request.headers.environ and "Basic" in request.environ["HTTP_AUTHORIZATION"]) or \
             "BASIC_AUTH" in session:
         if "BASIC_AUTH" in session:
@@ -156,7 +159,7 @@ def _ldap_auth(kerb_user=None):
                 return None
             authorized_user = username
 
-        if _cfg['VALID_LDAP_GROUPS'] != "()":
+        if _cfg['VALID_LDAP_GROUPS'] != "()" and _cfg["GROUP_AUTH"]:
             # Search ldap to verify that user is in one of the defined valid groups
             ldap_result_id = ldap_connection.search(base, search_scope, query, retrieve_attributes)
             rtype, rdata = ldap_connection.result(ldap_result_id, 1)
@@ -166,6 +169,8 @@ def _ldap_auth(kerb_user=None):
                 func = inspect.stack()[0][3]
                 _logger.warn("{0} - Bad Request, could not verify users credentials - user not in group ".format(func))
                 authorized_user = None
+        else:
+            authorized_user = username
     except Exception as ex:
         func = inspect.stack()[0][3]
         _logger.warn("{0} - Bad Request, could not verifying users credentials ".format(func))
@@ -177,6 +182,34 @@ def _ldap_auth(kerb_user=None):
         func = inspect.stack()[0][3]
         _logger.warn("{0} - Bad Request, could not verifying users credentials ".format(func))
         return None
+
+def ldap_get_users_groups(uid):
+    """ Returns a list of the groups that the uid is a member of.
+        Returns False if it can't find the uid or throws an exception.
+        It's up to the caller to ensure that the UID they're using exists!
+    """
+#    _logger.debug("uid: ", uid)
+    # ignore certificate errors
+    ldap.set_option(ldap.OPT_X_TLS_CACERTFILE, _cfg['LDAP_CERT_PATH'])
+    l = ldap.initialize(_cfg['LDAP_HOST'])
+    # this filter is used to searche for all groups that user is in.
+    search_filter = query = "(&(memberUid={0})(|{1}))".format(uid, "(cn=*)")
+
+    try:
+        # this returns the groups!
+        results = l.search_s(_cfg["LDAP_GROUP_SEARCH_BASE"], ldap.SCOPE_SUBTREE, search_filter, ['cn', ])
+        _logger.debug('%s groups: %s' % (uid, results))
+        return results
+    except ldap.NO_SUCH_OBJECT as e:
+        _logger.error("Unable to lookup user '{0}' on LDAP server".format(uid))
+        return False
+    except Exception as e:  # some other error occured
+        _logger.error("Error occurred looking up user '{0}' in LDAP")
+        return False
+    # shouldn't get here, but if we do, we don't have any results!
+
+
+    return False
 
 
 def authenticate(unauthorized=_unauthorized, forbidden=_forbidden):

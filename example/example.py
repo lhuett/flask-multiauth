@@ -1,14 +1,20 @@
 import logging
 
+from datetime import timedelta
 from flask import Response, session
 from base64 import b64encode
 from flask import jsonify, Flask, render_template, request, redirect, url_for
 from os import environ
-from flask_multiauth import authenticate, init_multiauth, logout
+from flask_multiauth import authenticate, init_multiauth, logout, ldap_get_users_groups
 import config_example
 import socket
 
 authex = Flask(__name__)
+
+authex.secret_key = "rh ra analysis portal sk"
+authex.config["SESSION_TYPE"] = 'filesystem'
+
+#Session(authex)
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s %(levelname)s %(message)s')
 logger = logging.getLogger("TEST")
@@ -46,6 +52,9 @@ def ldap_login():
 @authenticate(unauthorized=_unauthorized, forbidden=_forbidden)
 def auth(user):
 
+    grps = ldap_get_users_groups(user)
+    logger.info("Groups for user '{0}'")
+    logger.info(grps)
 
     if user:
         return jsonify({"status": "Success - auth"}, {"user": user})
@@ -83,6 +92,6 @@ if __name__ == "__main__":
     environ["KRB5_KTNAME"] = authex.config["KRB5_KTNAME"]
     authex.secret_key = authex.config["SESSION_SECRET_KEY"]
 
-    authex.run(host='0.0.0.0', port=5006, debug=True)
+    authex.run(host='0.0.0.0', port=5007, debug=True)
 
 

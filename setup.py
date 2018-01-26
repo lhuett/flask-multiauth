@@ -5,6 +5,7 @@ __here__ = os.path.dirname(os.path.abspath(__file__))
 
 runtime = {
     'requests',
+    'flask_session',
     'flask',
     'Jinja2',
     'flask-ldap',
