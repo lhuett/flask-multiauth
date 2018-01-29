@@ -197,14 +197,19 @@ def ldap_get_users_groups(uid):
 
     try:
         # this returns the groups!
-        results = l.search_s(_cfg["LDAP_GROUP_SEARCH_BASE"], ldap.SCOPE_SUBTREE, search_filter, ['cn', ])
-        _logger.debug('%s groups: %s' % (uid, results))
-        return results
+        results = l.search_s(_cfg["LDAP_SEARCH_BASE"], ldap.SCOPE_SUBTREE, search_filter, ['cn', ])
+        if results and results != "":
+            groups = []
+            for result in results:
+                groups.append(result[1]["cn"][0])
+            return groups
+        else:
+            return False
     except ldap.NO_SUCH_OBJECT as e:
-        _logger.error("Unable to lookup user '{0}' on LDAP server".format(uid))
+        _logger.warn("Unable to lookup user '{0}' on LDAP server".format(uid))
         return False
     except Exception as e:  # some other error occured
-        _logger.error("Error occurred looking up user '{0}' in LDAP")
+        _logger.warn("Error occurred looking up user '{0}' in LDAP")
         return False
     # shouldn't get here, but if we do, we don't have any results!
 
