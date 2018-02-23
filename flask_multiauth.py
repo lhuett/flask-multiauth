@@ -252,9 +252,9 @@ def authenticate(unauthorized=_unauthorized, forbidden=_forbidden):
                     enc_user = "{:<16}".format(authorized_user)
                     cipher = AES.new(_cfg["K"])
                     crypt_user = b64encode(cipher.encrypt(enc_user))
+                    session["LOGGED_IN_USER"] = crypt_user
                     response = func(authorized_user, *args, **kwargs)
                     response = make_response(response)
-                    session["LOGGED_IN_USER"] = crypt_user
                     if context.kerberos_token is not None:
                         response.headers['WWW-Authenticate'] = ' '.join(['negotiate', context.kerberos_token])
                     return response
