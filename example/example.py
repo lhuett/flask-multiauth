@@ -11,7 +11,6 @@ import socket
 
 authex = Flask(__name__)
 
-authex.secret_key = "rh ra analysis portal sk"
 authex.config["SESSION_TYPE"] = 'filesystem'
 
 #Session(authex)
