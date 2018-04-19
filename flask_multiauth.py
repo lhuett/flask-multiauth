@@ -217,7 +217,7 @@ def ldap_get_users_groups(uid):
     return False
 
 
-def authenticate(unauthorized=_unauthorized, forbidden=_forbidden):
+def authenticate(unauthorized=_unauthorized, forbidden=_forbidden, alt_auth=None):
     """
     The decorated view function will only be called if user is successfully authenticated with Kerberos or Basic Auth
     , as long as a Basic Auth header is present. Both valid Kerberos authentication or Basic Auth authenticated users
@@ -226,6 +226,7 @@ def authenticate(unauthorized=_unauthorized, forbidden=_forbidden):
 
     @param unauthorized: optional funcion to handle unauthorized
     @param forbidden: optional funcion to handle forbidden
+    @param alt_auth: optional function to custom handle an auternate way of authorizing
     @returns: decorated function, unauthorized or forbidden
     """
 
@@ -262,7 +263,12 @@ def authenticate(unauthorized=_unauthorized, forbidden=_forbidden):
                     return forbidden()
             elif (header and "Basic" in header) or ("BASIC_AUTH" in session and "Basic" in session["BASIC_AUTH"]):
                 usr = _ldap_auth(None)
-                if not usr:
+                if not usr and alt_auth is not None:
+                    if "BASIC_AUTH" in session:
+                        return alt_auth(session["BASIC_AUTH"], **kwargs)
+                    else:
+                        return alt_auth(request.headers.environ["HTTP_AUTHORIZATION"], **kwargs)
+                else:
                     return unauthorized()
                 enc_user = "{:<16}".format(usr)
                 cipher = AES.new(_cfg["K"])
