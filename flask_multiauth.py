@@ -263,13 +263,16 @@ def authenticate(unauthorized=_unauthorized, forbidden=_forbidden, alt_auth=None
                     return forbidden()
             elif (header and "Basic" in header) or ("BASIC_AUTH" in session and "Basic" in session["BASIC_AUTH"]):
                 usr = _ldap_auth(None)
-                if not usr and alt_auth is not None:
-                    if "BASIC_AUTH" in session:
-                        return alt_auth(session["BASIC_AUTH"], **kwargs)
+                if not usr:
+                    if alt_auth is not None:
+                        # return the Auth header in case further user investigation needed.
+                        if "BASIC_AUTH" in session:
+                            return alt_auth(session["BASIC_AUTH"], **kwargs)
+                        else:
+                            user = alt_auth(request.headers.environ["HTTP_AUTHORIZATION"], **kwargs)
+                            return func(user, *args, **kwargs)
                     else:
-                        return alt_auth(request.headers.environ["HTTP_AUTHORIZATION"], **kwargs)
-                else:
-                    return unauthorized()
+                        return unauthorized()
                 enc_user = "{:<16}".format(usr)
                 cipher = AES.new(_cfg["K"])
                 crypt_user = b64encode(cipher.encrypt(enc_user))
